@@ -1,0 +1,17 @@
+# Scripts para conversão de lista do JúpiterWeb p/ formato do Megazord (2014)
+
+Como infelizmente as listas agora são entregues em formato PDF, é necessário
+convertê-lo para texto, e depois converter o texto para o formato correto.
+
+Por isso é necessária a existência do programa 'pdftotext', do pacote
+'poppler-utils'.
+
+O script jupinfo-from-pdf.py faz todo o trabalho, recebendo diretamente o
+caminho para o PDF como único parâmetro, e devolvendo uma lista no formato do
+Júpiter na saída padrão.
+
+O script filter.py existe para conveniência: ele recebe caminhos para duas
+listas no formato do Megazord, e devolve na saída padrão todas as entradas da
+segunda lista que não existem na primeira. Pode ser usado, por exemplo, para
+remover do nojup_info entradas criadas para bixos que agora estão no Júpiter:
+`python filter.py jup_info nojup_info`.
