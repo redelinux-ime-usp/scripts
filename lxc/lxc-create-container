@@ -1,0 +1,144 @@
+#!/bin/bash
+
+set -e
+
+idmap_next_available_id()
+{
+    local file="$1" entry_user id_start id_count
+    local -i id_chunk="$2" id_max=0 entry_max=0
+
+    if ! [[ -f "$file" ]] || (( id_chunk <= 0 )); then
+        return 1
+    fi
+
+    while IFS=':' read -r entry_user id_start id_count; do
+        entry_max=$(( id_start + id_count )) 
+        if (( entry_max > id_max )); then
+            (( id_max = entry_max ))
+        fi
+    done < "$file"
+
+    if (( id_max == 0 )); then
+        (( id_max = id_chunk ))
+    else
+        local -i remainder=$(( id_max % id_chunk ))
+        if (( remainder != 0 )); then
+            (( id_max += id_chunk - remainder ))
+        fi
+    fi
+
+    echo -n "$id_max"
+}
+
+###
+
+[[ -n "$IDMAP_CHUNK" ]] || IDMAP_CHUNK=100000
+
+###
+
+print_help()
+{
+    echo "Usage: $0 container-name distribution [release] [-- lxc-options...]" >&2
+}
+
+argn=0
+while true; do
+    if (( $# == 0 )); then
+        break
+    fi
+
+    if [[ "$1" == -- ]]; then
+        shift
+        break
+    fi
+
+    case "$argn" in
+    0) name="$1" ;;
+    1) dist="$1" ;;
+    2) release="$1" ;;
+    *) print_help; exit 1
+    esac
+
+    (( ++argn ))
+    shift
+done
+
+if [[ -z "$dist" || -z "$release" ]]; then
+    print_help
+    exit 1
+fi
+
+if ! grep -q -E '^[[:alpha:]][[:alnum:]]*$' <<< "$name"; then
+    echo "Error: invalid name." >&2
+    exit 1
+fi
+
+case "$dist" in
+debian)
+    lxc_dist="debian"
+    lxc_release="wheezy"
+;;
+ubuntu)
+    lxc_dist="ubuntu"
+    lxc_release="trusty"
+;;
+*)
+    echo "Error: invalid distribution." >&2
+    exit 1
+esac
+
+###
+
+container_path="/var/lib/lxc/${name}"
+if [[ -e "$container_path" ]]; then
+    echo "Error: container path ${container_path} already exists." >&2
+    exit 1
+fi
+
+cfg_dir="/root/lxc-configs/${name}"
+cfg_path="${cfg_dir}/lxc.conf"
+
+mkdir -p "$cfg_dir"
+
+printable_params()
+{
+    local args
+    for arg in "$@"; do
+        if [[ "$arg" == *' '* ]]; then
+            echo -n "'${arg}'"
+        else
+            echo -n "$arg"
+        fi
+        echo -n ' '
+    done
+}
+
+cat > "$cfg_path" <<EOF
+# LXC configuration for ${name} - created by lxc-create-container
+#   name: ${name}
+#   dist: ${lxc_dist}
+#   release: ${lxc_release}
+#   lxc-options: $(printable_params "$@")
+#   date: $(date --iso-8601=seconds)
+
+EOF
+
+default_conf=$(lxc-config lxc.default_config)
+if [[ -f "$default_conf" ]]; then
+    cat "$default_conf" >> "$cfg_path"
+fi
+
+uid_start=$(idmap_next_available_id /etc/subuid $IDMAP_CHUNK)
+gid_start=$(idmap_next_available_id /etc/subgid $IDMAP_CHUNK)
+
+echo "root:${uid_start}:${IDMAP_CHUNK}" >> "/etc/subuid"
+echo "root:${gid_start}:${IDMAP_CHUNK}" >> "/etc/subgid"
+
+cat >> "$cfg_path" <<EOF
+lxc.id_map = u 0 ${uid_start} 100000
+lxc.id_map = g 0 ${gid_start} 100000
+EOF
+
+lxc-create -n "${name}" -f "${cfg_path}" -B zfs \
+ -o "${cfg_dir}/create.log" -l INFO \
+ -t download -- -d "${lxc_dist}" -r "${lxc_release}" -a amd64 "$@"

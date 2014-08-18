@@ -1,0 +1,23 @@
+#!/bin/bash
+
+name="$1"
+original_name="$2"
+
+print_help()
+{
+    echo "Usage: $0 container-name" >&2
+}
+
+if [[ -z "$name" ]]; then
+    print_help
+    exit 1
+fi
+
+lxc_chroot()
+{
+    
+}
+
+
+
+
