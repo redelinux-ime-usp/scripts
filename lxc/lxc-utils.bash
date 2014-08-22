@@ -68,9 +68,14 @@ id_map_add()
         return 1
     fi
 
+    local line="${user}:${dest}:${range}"
+    if grep -q -F -x "$line" "$file"; then
+        return 0
+    fi
+
     (
         cat "$file"
-        echo "${user}:${dest}:${range}"
+        echo "$line"
     ) > "${file}.tmp" || return 1
 
     mv "${file}.tmp" "$file" || return 1
@@ -86,6 +91,33 @@ id_map_group_add()
 {
     id_map_add "$ID_MAP_GROUP_FILE" "$@"
 }
+
+id_map_add_from_lxc_cfg()
+(
+    set -e
+
+    local config_file="$1"
+    lxc_cfg_check_file "$config_file"
+
+    local uid_map gid_map
+    lxc_cfg_userns_get "$config_file" "$uid_map" "$gid_map"
+
+    if [[ -n "$uid_map" ]]; then
+        local uid_src uid_dest uid_range
+        id_map_parse "$uid_map" uid_src uid_dest uid_range
+
+        id_map_user_add root $uid_dest $uid_range
+    fi
+
+    if [[ -n "$gid_map" ]]; then
+        local gid_src gid_dest gid_range
+        id_map_parse "$gid_map" gid_src gid_dest gid_range
+
+        id_map_group_add root $gid_dest $gid_range
+    fi
+
+    return 0
+)
 
 id_map_parse()
 {
@@ -170,26 +202,30 @@ lxc_cfg_userns_set()
 
     local -i uid_src uid_dest uid_range gid_src gid_dest git_range
 
-    if [[ -n "$uid_map" ]]; then
+    if [[ "$uid_map" == "new" ]]; then
+        uid_src=0
+        uid_range=$ID_MAP_DEFAUlT_RANGE
+        uid_dest=$(id_map_user_next_available_id $uid_range) || return 1
+    elif [[ -n "$uid_map" ]]; then
         if ! id_map_parse "$uid_map" uid_src uid_dest uid_range; then
             echo "Error: ${FUNCNAME}: invalid UID parameters" >&2
             return 1
         fi
     else
-        uid_src=0
-        uid_range=$ID_MAP_DEFAUlT_RANGE
-        uid_dest=$(id_map_user_next_available_id $uid_range) || return 1
+        return 1
     fi
 
-    if [[ -n "$gid_map" ]]; then
+    if [[ "$gid_map" == "new" ]]; then
+        gid_src=0
+        gid_range=$ID_MAP_DEFAUlT_RANGE
+        gid_dest=$(id_map_user_next_available_id $gid_range) || return 1
+    elif [[ -n "$gid_map" ]]; then
         if ! id_map_parse "$gid_map" gid_src gid_dest gid_range; then
             echo "Error: ${FUNCNAME}: invalid GID parameters" >&2
             return 1
         fi
     else
-        gid_src=0
-        gid_range=$ID_MAP_DEFAUlT_RANGE
-        gid_dest=$(id_map_user_next_available_id $gid_range) || return 1
+        return 1
     fi
 
     (
@@ -208,6 +244,7 @@ lxc_cfg_userns_set()
     ) > "${config_file}.tmp" || return 1
 
     mv "${config_file}.tmp" "${config_file}" || return 1
+
     return 0
 }
 
