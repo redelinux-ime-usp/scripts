@@ -235,12 +235,8 @@ lxc_cfg_userns_set()
          | perl -0pe 's/\s+\z//s'
 
         echo; echo; echo "# User namespace configuration"
-        if (( uid_src == gid_src && uid_dest == gid_dest && uid_range == gid_range )); then
-            echo "lxc.id_map = b ${uid_src} ${uid_dest} ${uid_range}"
-        else
-            echo "lxc.id_map = u ${uid_src} ${uid_dest} ${uid_range}"
-            echo "lxc.id_map = g ${gid_src} ${gid_dest} ${gid_range}"
-        fi
+        echo "lxc.id_map = u ${uid_src} ${uid_dest} ${uid_range}"
+        echo "lxc.id_map = g ${gid_src} ${gid_dest} ${gid_range}"
     ) > "${config_file}.tmp" || return 1
 
     mv "${config_file}.tmp" "${config_file}" || return 1
