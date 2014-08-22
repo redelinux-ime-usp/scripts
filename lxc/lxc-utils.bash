@@ -1,5 +1,9 @@
 ID_MAP_USER_FILE=/etc/subuid
+ID_MAP_USER_FILE_BKP="${ID_MAP_USER_FILE}.lxc-backup"
+
 ID_MAP_GROUP_FILE=/etc/subgid
+ID_MAP_GROUP_FILE_BKP="${ID_MAP_GROUP_FILE}.lxc-backup"
+
 ID_MAP_DEFAUlT_RANGE=100000
 
 is_num()
@@ -106,6 +110,7 @@ id_map_add_from_lxc_cfg()
         local uid_src uid_dest uid_range
         id_map_parse "$uid_map" uid_src uid_dest uid_range
 
+        cp "$ID_MAP_USER_FILE" "$ID_MAP_USER_FILE_BKP"
         id_map_user_add root $uid_dest $uid_range
     fi
 
@@ -113,11 +118,23 @@ id_map_add_from_lxc_cfg()
         local gid_src gid_dest gid_range
         id_map_parse "$gid_map" gid_src gid_dest gid_range
 
+        cp "$ID_MAP_GROUP_FILE" "$ID_MAP_GROUP_FILE_BKP"
         id_map_group_add root $gid_dest $gid_range
     fi
 
     return 0
 )
+
+id_map_commit()
+{
+    rm -f "$ID_MAP_USER_FILE_BKP" "$ID_MAP_GROUP_FILE_BKP"
+}
+
+id_map_rollback()
+{
+    mv "$ID_MAP_USER_FILE_BKP" "$ID_MAP_USER_FILE"
+    mv "$ID_MAP_GROUP_FILE_BKP" "$ID_MAP_GROUP_FILE"
+}
 
 id_map_parse()
 {

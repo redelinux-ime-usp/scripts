@@ -108,8 +108,13 @@ lxc.hook.clone = ${src_dir}/hooks/userns-convert
 lxc.hook.clone = ${src_dir}/hooks/sysprep
 EOF
 
-lxc-create -n "${name}" -f "${cfg_path}" -B zfs \
- -o "${cfg_dir}/create.log" -l INFO \
- -t download -- -d "${lxc_dist}" -r "${lxc_release}" -a amd64 "$@"
-
 id_map_add_from_lxc_cfg "$cfg_path"
+
+if lxc-create -n "${name}" -f "${cfg_path}" -B zfs \
+   -o "${cfg_dir}/create.log" -l INFO \
+   -t download -- -d "${lxc_dist}" -r "${lxc_release}" -a amd64 "$@"
+then
+    id_map_commit
+else
+    id_map_rollback
+fi
