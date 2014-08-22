@@ -374,17 +374,24 @@ lxc_userns_maybe_reexec()
 
 lxc_hook_check_params()
 {
-    local _container="$1" _section="$2" _hook_type="$3"
+    local _container="$1" _section="$2" _hook_type="$3" rootfs
 
     if [[ -z "$_container" || "$_section" != lxc  ]]; then
         echo "Error: Invalid parameters" >&2
         return 1
     fi
 
-    lxc_fs_check_dir "$LXC_ROOTFS_MOUNT" || return 1
+    if [[ -d "$LXC_ROOTFS_PATH" ]]; then
+        rootfs="$LXC_ROOTFS_PATH"
+    else
+        rootfs="$LXC_ROOTFS_MOUNT"
+    fi
+
+    lxc_fs_check_dir "$rootfs" || return 1
 
     eval "lxc_hook_container"=\$_container
     eval "lxc_hook_type"=\$_hook_type
+    eval "lxc_rootfs"=\$rootfs
 
     return 0
 }

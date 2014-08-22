@@ -19,9 +19,6 @@ if ! lxc_hook_check_params "$@" || [[ "$lxc_hook_type" != clone ]]; then
     exit 1
 fi
 
-echo "rootfs: $LXC_ROOTFS_MOUNT"
-cat
-
 lxc_cfg_userns_get "$LXC_CONFIG_FILE" uid_map gid_map
 
 if [[ -z "$uid_map" && -z "$gid_map" ]]; then
@@ -47,4 +44,4 @@ if [[ -n "$new_gid_map" ]]; then
     inf "New group mapping: ${new_gid_map}"
 fi
 
-lxc_fs_userns_apply "$LXC_CONFIG_FILE" "$LXC_ROOTFS_MOUNT"
+lxc_fs_userns_apply "$LXC_CONFIG_FILE" "$lxc_rootfs"
