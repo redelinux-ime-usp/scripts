@@ -8,9 +8,18 @@ src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 
 ###
 
-if ! lxc_hook_check_params "$@" || [[ "$lxc_hook_type" != clone|sysprep ]]; then
+if ! lxc_hook_check_params "$@"; then
     exit 1
 fi
+
+case "$lxc_hook_type" in
+clone|sysprep)
+    # pass
+;;
+*)
+    echo "Error: invalid hook type" >&2
+    exit 1
+esac
 
 # Run in the user namespace if needed
 
