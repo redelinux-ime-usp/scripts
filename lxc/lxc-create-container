@@ -103,6 +103,11 @@ fi
 
 lxc_cfg_userns_set "$config_file" "" ""
 
-lxc-create -n "${name}" -f "${cfg_path}" -B zfs \
+cat >> "$config_file" <<EOF
+lxc.hook.clone = ${src_dir}/hooks/userns-convert
+lxc.hook.clone = ${src_dir}/hooks/sysprep
+EOF
+
+echo lxc-create -n "${name}" -f "${cfg_path}" -B zfs \
  -o "${cfg_dir}/create.log" -l INFO \
  -t download -- -d "${lxc_dist}" -r "${lxc_release}" -a amd64 "$@"
