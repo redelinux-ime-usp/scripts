@@ -104,7 +104,7 @@ id_map_add_from_lxc_cfg()
     lxc_cfg_check_file "$config_file"
 
     local uid_map gid_map
-    lxc_cfg_userns_get "$config_file" "$uid_map" "$gid_map"
+    lxc_cfg_userns_get "$config_file" uid_map gid_map
 
     if [[ -n "$uid_map" ]]; then
         local uid_src uid_dest uid_range
