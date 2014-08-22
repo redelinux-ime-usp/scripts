@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-shopt dotglob
+shopt -s dotglob
 
 src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 . "${src_dir}/../lxc-utils.bash"
@@ -31,7 +31,7 @@ fi
 echo "Setting up hostname"
 
 echo "$container" > "${lxc_rootfs}/etc/hostname"
-sed -i -E "s/ ${LXC_SRC_NAME}\\([[:blank:]]|\$\\)/ ${container}\\1/" \
+sed -i -r "s/ ${LXC_SRC_NAME}\\([[:blank:]]|\$\\)/ ${container}\\1/" \
  "${lxc_rootfs}/etc/hosts"
 
 ###
