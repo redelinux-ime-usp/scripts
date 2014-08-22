@@ -94,16 +94,16 @@ default_conf=$(lxc-config lxc.default_config)
 if [[ -f "$default_conf" ]]; then
     cat "$default_conf" >> "$cfg_path"
 else
-    echo -n >> "$cfg_path"
+    echo > "$cfg_path"
 fi
 
 if [[ -n "$config_file" ]]; then
     cat "$config_file" >> "$cfg_path"
 fi
 
-lxc_cfg_userns_set "$config_file" "" ""
+lxc_cfg_userns_set "$cfg_path" "" ""
 
-cat >> "$config_file" <<EOF
+cat >> "$cfg_path" <<EOF
 lxc.hook.clone = ${src_dir}/hooks/userns-convert
 lxc.hook.clone = ${src_dir}/hooks/sysprep
 EOF
