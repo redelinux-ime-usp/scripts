@@ -2,9 +2,8 @@
 
 set -e
 
-###
-
-[[ -n "$IDMAP_CHUNK" ]] || IDMAP_CHUNK=100000
+src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+. "${src_dir}/lxc-hook-utils"
 
 ###
 
@@ -102,33 +101,8 @@ if [[ -n "$config_file" ]]; then
     cat "$config_file" >> "$cfg_path"
 fi
 
-uid_start=$(idmap_next_available_id /etc/subuid $IDMAP_CHUNK)
-gid_start=$(idmap_next_available_id /etc/subgid $IDMAP_CHUNK)
-
-uid_line="root:${uid_start}:${IDMAP_CHUNK}"
-gid_line="root:${gid_start}:${IDMAP_CHUNK}"
-
-undo_idmap()
-(
-    grep -v -F -x "$uid_line" /etc/subuid > /etc/subuid.new
-    mv /etc/subuid{.new,}
-
-    grep -v -F -x "$gid_line" /etc/subgid > /etc/subgid.new
-    mv /etc/subgid{.new,}
-)
-
-trap undo_idmap EXIT
-
-echo "$uid_line" >> "/etc/subuid"
-echo "$gid_line" >> "/etc/subgid"
-
-cat >> "$cfg_path" <<EOF
-lxc.id_map = u 0 ${uid_start} 100000
-lxc.id_map = g 0 ${gid_start} 100000
-EOF
+lxc_cfg_userns_set "$config_file" "" ""
 
 lxc-create -n "${name}" -f "${cfg_path}" -B zfs \
  -o "${cfg_dir}/create.log" -l INFO \
  -t download -- -d "${lxc_dist}" -r "${lxc_release}" -a amd64 "$@"
-
-trap - EXIT

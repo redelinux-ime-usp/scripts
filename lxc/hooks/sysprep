@@ -3,16 +3,16 @@
 set -e
 shopt dotglob
 
-src_dir=$(dirname "${BASH_SOURCE[0]}")
+src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 . "${src_dir}/lxc-hook-utils"
 
-if ! lxc_check_clone_hook_params clone "$@"; then
-    exit $?
+if ! lxc_hook_check_params "$@" || [[ "$lxc_hook_type" != clone|sysprep ]]; then
+    exit 1
 fi
 
 # Run in the user namespace if needed
 
-if ! lxc_userns_maybe_reexec "$LXC_CONFIG_FILE" -- "$@"; then
+if ! lxc_userns_maybe_reexec "$LXC_CONFIG_FILE" -- "$0" "$@"; then
     echo "Error: failed checking userns mapping for execution" >&2
     exit 1
 fi
