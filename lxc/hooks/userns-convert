@@ -2,14 +2,16 @@
 
 set -e
 
-err() { echo "Error:" "$@" >&2 }
-inf() { echo "Info:" "$@" >&2 }
+###
+
+src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+. "${src_dir}/../lxc-utils.bash"
+
+script_name=$(basename "${BASH_SOURCE[0]}")
 
 ###
 
-script_name=$(basename "${BASH_SOURCE[0]}")
-src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-. "${src_dir}/lxc-hook-utils"
+inf() { echo "Info:" "$@" >&2 }
 
 ###
 

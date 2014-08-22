@@ -3,7 +3,7 @@
 set -e
 
 src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-. "${src_dir}/lxc-hook-utils"
+. "${src_dir}/lxc-utils.bash"
 
 ###
 

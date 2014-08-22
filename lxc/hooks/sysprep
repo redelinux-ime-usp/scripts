@@ -4,7 +4,9 @@ set -e
 shopt dotglob
 
 src_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-. "${src_dir}/lxc-hook-utils"
+. "${src_dir}/../lxc-utils.bash"
+
+###
 
 if ! lxc_hook_check_params "$@" || [[ "$lxc_hook_type" != clone|sysprep ]]; then
     exit 1
