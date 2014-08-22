@@ -31,7 +31,7 @@ fi
 echo "Setting up hostname"
 
 echo "$container" > "${lxc_rootfs}/etc/hostname"
-sed -i -r "s/ ${LXC_SRC_NAME}\\([[:blank:]]|\$\\)/ ${container}\\1/" \
+sed -i -r "s/ ${LXC_SRC_NAME}([[:blank:]]|\$)/ ${container}\\1/" \
  "${lxc_rootfs}/etc/hosts"
 
 ###
