@@ -92,7 +92,7 @@ printable_params()
 
 default_conf=$(lxc-config lxc.default_config)
 if [[ -f "$default_conf" ]]; then
-    cat "$default_conf" >> "$cfg_path"
+    cat "$default_conf" > "$cfg_path"
 else
     echo > "$cfg_path"
 fi
