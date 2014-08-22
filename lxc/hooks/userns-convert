@@ -45,3 +45,4 @@ if [[ -n "$new_gid_map" ]]; then
 fi
 
 lxc_fs_userns_apply "$LXC_CONFIG_FILE" "$lxc_rootfs"
+exit 0

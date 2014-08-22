@@ -21,47 +21,47 @@ fi
 
 echo "Setting up hostname"
 
-echo "$container" > "${LXC_ROOTFS_MOUNT}/etc/hostname"
+echo "$container" > "${lxc_rootfs}/etc/hostname"
 sed -i -E "s/ ${LXC_SRC_NAME}\\([[:blank:]]|\$\\)/ ${container}\\1/" \
- "${LXC_ROOTFS_MOUNT}/etc/hosts"
+ "${lxc_rootfs}/etc/hosts"
 
 ###
 
 echo "Cleaning shell history"
 
-rm -f ${LXC_ROOTFS_MOUNT}/root/.*history
+rm -f ${lxc_rootfs}/root/.*history
 
 ###
 
 echo "Cleaning up DHCP leases"
 
-rm -f ${LXC_ROOTFS_MOUNT}/var/lib/dhclient/*
+rm -f ${lxc_rootfs}/var/lib/dhclient/*
 
 ###
 
 echo "Cleaning temporary dirs"
 
-rm -rf ${LXC_ROOTFS_MOUNT}/{tmp,var/tmp}/*
+rm -rf ${lxc_rootfs}/{tmp,var/tmp}/*
 
 ###
 
 echo "Cleaning udev persistent net rules"
 
-rm -f ${LXC_ROOTFS_MOUNT}/etc/udev/*-persistent-net.rules
+rm -f ${lxc_rootfs}/etc/udev/*-persistent-net.rules
 
 ###
 
 echo "Cleaning up SSH known hosts"
 
-rm -f "${LXC_ROOTFS_MOUNT}/root/.ssh/known_hosts"
+rm -f "${lxc_rootfs}/root/.ssh/known_hosts"
 
 echo "Recreating SSH host keys"
 
-rm -f ${LXC_ROOTFS_MOUNT}/etc/ssh/*_host_*
+rm -f ${lxc_rootfs}/etc/ssh/*_host_*
 
-ssh-keygen -f "${LXC_ROOTFS_MOUNT}/etc/ssh/ssh_host_rsa_key" -N '' -t rsa
-ssh-keygen -f "${LXC_ROOTFS_MOUNT}/etc/ssh/ssh_host_dsa_key" -N '' -t dsa
-ssh-keygen -f "${LXC_ROOTFS_MOUNT}/etc/ssh/ssh_host_ecdsa_key" -N '' -t ecdsa \
+ssh-keygen -f "${lxc_rootfs}/etc/ssh/ssh_host_rsa_key" -N '' -t rsa
+ssh-keygen -f "${lxc_rootfs}/etc/ssh/ssh_host_dsa_key" -N '' -t dsa
+ssh-keygen -f "${lxc_rootfs}/etc/ssh/ssh_host_ecdsa_key" -N '' -t ecdsa \
  -b 521
 
 ###
