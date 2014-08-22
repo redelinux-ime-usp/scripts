@@ -2,34 +2,6 @@
 
 set -e
 
-idmap_next_available_id()
-{
-    local file="$1" entry_user id_start id_count
-    local -i id_chunk="$2" id_max=0 entry_max=0
-
-    if ! [[ -f "$file" ]] || (( id_chunk <= 0 )); then
-        return 1
-    fi
-
-    while IFS=':' read -r entry_user id_start id_count; do
-        entry_max=$(( id_start + id_count )) 
-        if (( entry_max > id_max )); then
-            (( id_max = entry_max ))
-        fi
-    done < "$file"
-
-    if (( id_max == 0 )); then
-        (( id_max = id_chunk ))
-    else
-        local -i remainder=$(( id_max % id_chunk ))
-        if (( remainder != 0 )); then
-            (( id_max += id_chunk - remainder ))
-        fi
-    fi
-
-    echo -n "$id_max"
-}
-
 ###
 
 [[ -n "$IDMAP_CHUNK" ]] || IDMAP_CHUNK=100000

@@ -1,0 +1,145 @@
+#!/bin/bash
+
+idmap_next_available_range()
+{
+    local file="$1" id_range="$2"
+
+    if [[ -z "$file" || -z "$id_range" ]]; then
+        echo "Error: ${FUNCNAME}: invalid parameters" >&2
+        return 1
+    fi
+
+    if [[ ! -f "$file" ]]; then
+        echo "Error: ${FUNCNAME}: invalid or inaccesible file" >&2
+        return 1
+    fi
+
+    if ! (( id_range )); then
+        echo "Error: ${FUNCNAME}: invalid range"
+        return 1
+    fi
+
+    local -i id_global_start=100000 id_max=0 entry_max=0
+
+    while IFS=':' read -r entry_user id_start id_count; do
+        entry_max=$(( id_start + id_count )) 
+        if (( entry_max > id_max )); then
+            (( id_max = entry_max ))
+        fi
+    done < "$file"
+
+    if (( id_max == 0 )); then
+        (( id_max = id_global_start ))
+    else
+        local -i remainder=$(( id_max % id_chunk ))
+        if (( remainder != 0 )); then
+            (( id_max += id_chunk - remainder ))
+        fi
+    fi
+
+    echo -n "$id_max"
+}
+
+lxc_cfg_get()
+{
+    local file="$1" key="$2"
+    grep -q -E "^${key}[[:blank:]]*=" "$file" | \
+        sed -r 's/^[^=]+=[[:blank:]]*'
+}
+
+lxc_cfg_get_userns()
+{
+    local config_file="$1" uid_var="$2" gid_var="$3"
+    if [[ -z "$config_file" || ! -f "$config_file" ]]; then
+        echo "Error: $FUNCNAME: invalid config file" >&2
+        return 1
+    fi
+
+    if [[ -z "$uid_var" || -z "$gid_var" ]]; then
+        echo "Error: $FUNCNAME: invalid output variables" >&2
+        return 1
+    fi
+
+    local _uid_range='' _gid_range='' idmap_line
+
+    while read -r idmap_line; do
+        if [[ "$idmap_line" == b* ]]; then
+            _uid_range="${idmap_line#b }"
+            _gid_range="$uid_range"
+        elif [[ "$idmap_line" == u* ]]; then
+            _uid_range="${idmap_line#u }"
+        elif [[ "$idmap_line" == g* ]]; then
+            _gid_range="${idmap_line#g }"
+        else
+            echo "Warning: $FUNCNAME: invalid lxc.id_map value of '${idmap_line}' found, skipping" >&2
+            continue
+        fi
+
+        if [[ -n "$_uid_range" && -n "$_gid_range" ]]; then
+            break
+        fi
+    done <(lxc_cfg_get "$config_file" lxc.id_map)
+
+    eval "$uid_var"=\$uid_range
+    eval "$gid_var"=\$gid_range
+
+    return 0
+}
+
+am_in_userns()
+{
+    [ -e /proc/self/uid_map ] || return 1
+    [ "$(wc -l /proc/self/uid_map | awk '{ print $1 }')" -eq 1 ] || return 0
+    
+    local line=$(awk '{ print $1 " " $2 " " $3 }' /proc/self/uid_map)
+    [ "$line" = "0 0 4294967295" ] && return 1
+    return 0
+}
+
+lxc_userns_maybe_reexec()
+{
+    local config_file="$1"
+    shift
+
+    [[ "$1" != -- ]] || shift
+
+    if [[ -z "$config_file" || ! -f "$config_file" ]]; then
+        echo "Error: $FUNCNAME: invalid config file" >&2
+        return 1
+    fi
+
+    if am_in_userns; then
+        return 0
+    fi
+
+    local uid_range gid_range
+    if ! lxc_cfg_get_userns "$config_file" uid_range gid_range; then
+        # Error should already have been printed
+        return 1
+    fi
+
+    if [[ -z "$uid_range" && -z "$gid_range" ]]; then
+        return 0
+    fi
+
+    exec lxc-usernsexec ${uid_range:+-u ${uid_range}} ${gid_range:+-g ${gid_range}} \
+     -- "$@"
+}
+
+lxc_check_clone_hook_params()
+{
+    local expected_type="$1"
+    declare -g container="$2" section="$3" hook_type="$4"
+
+    if [[ -z "$container" || "$section" != lxc || "$hook_type" != "$expected_type" ]]; then
+        echo "Error: $FUNCNAME: Invalid parameters" >&2
+        return 1
+    fi
+
+    if ! [[ -d "$LXC_ROOTFS_MOUNT" ]]; then
+        echo "Error: $FUNCNAME: rootfs is not a directory" >&2
+        return 1
+    fi
+
+    return 0
+}

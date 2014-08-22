@@ -1,0 +1,38 @@
+#!/bin/bash
+
+script_name=$(basename "${BASH_SOURCE[0]}")
+src_dir=$(dirname "${BASH_SOURCE[0]}")
+. "${src_dir}/lxc-hook-utils"
+
+UID_MAP_RANGE=100000
+GID_MAP_RANGE=100000
+
+if ! lxc_check_clone_hook_params clone "$@"; then
+    exit $?
+fi
+
+if ! lxc_cfg_get_userns "$LXC_CONFIG_FILE" uid_range gid_range; then
+    exit 1
+fi
+
+if [[ -z "$uid_range" && -z "$gid_range" ]]; then
+    echo "Info: ${script_name}: no userns found, nothing to do" >&2
+    # Nothing to do
+    exit 0
+fi
+
+if ! new_uid_start=$(idmap_next_available_range /etc/subuid $UID_MAP_RANGE); then
+    echo "Error: failed to find new UID to map for container" >&2
+    exit 1
+fi
+
+if ! new_gid_start=$(idmap_next_available_range /etc/subgid $GID_MAP_RANGE); then
+    echo "Error: failed to find new GID to map for container" >&2
+    exit 1
+fi
+
+echo "Info: ${script_name}: mapping container to UID ${new_uid_start} with range ${UID_MAP_RANGE}" >&2
+echo "Info: ${script_name}: mapping container to GID ${new_gid_start} with range ${GID_MAP_RANGE}" >&2
+
+echo "root:${new_uid_start}:${UID_MAP_RANGE}" >> /etc/subuid
+echo "root:${new_gid_start}:${GID_MAP_RANGE}" >> /etc/subgid
