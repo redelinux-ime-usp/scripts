@@ -19,6 +19,9 @@ if ! lxc_hook_check_params "$@" || [[ "$lxc_hook_type" != clone ]]; then
     exit 1
 fi
 
+echo "rootfs: $LXC_ROOTFS_MOUNT"
+exit 1
+
 lxc_cfg_userns_get "$LXC_CONFIG_FILE" uid_map gid_map
 
 if [[ -z "$uid_map" && -z "$gid_map" ]]; then
