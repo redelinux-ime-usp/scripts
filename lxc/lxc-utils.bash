@@ -376,7 +376,7 @@ lxc_hook_check_params()
 {
     local _container="$1" _section="$2" _hook_type="$3"
 
-    if [[ -z "$container" || "$section" != lxc  ]]; then
+    if [[ -z "$_container" || "$_section" != lxc  ]]; then
         echo "Error: Invalid parameters" >&2
         return 1
     fi
