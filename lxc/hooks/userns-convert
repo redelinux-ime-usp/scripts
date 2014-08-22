@@ -11,7 +11,7 @@ script_name=$(basename "${BASH_SOURCE[0]}")
 
 ###
 
-inf() { echo "Info:" "$@" >&2 }
+inf() { echo "Info:" "$@" >&2; }
 
 ###
 
@@ -33,7 +33,7 @@ else
     fi
 fi
 
-lxc_cfg_userns_set "$LXC_CONFIG_FILE" "" ""
+lxc_cfg_userns_set "$LXC_CONFIG_FILE" "new" "new"
 lxc_cfg_userns_get "$LXC_CONFIG_FILE" new_uid_map new_gid_map
 
 if [[ -n "$new_uid_map" ]]; then
